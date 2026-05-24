@@ -1,9 +1,28 @@
 import abc
 import typing
+from abc import abstractmethod
+from typing import Any
+
+class DataProcessor(ABC):
+    @abstractmethod
+    def validate(self, data: Any) -> bool:
+        a
+
+    @abstractmethod
+    def ingest(self, data: Any) -> None:
+        a
+
+    def output(self) -> tuple[int, str]:
+        a
 
 
+class NumericProcessor(DataProcessor):
+    
+
+class TextProcessor(DataProcessor):
 
 
+class LogProcessor(DataProcessor):
 
 
 
