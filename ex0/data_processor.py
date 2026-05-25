@@ -1,74 +1,163 @@
-import abc
-import typing
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import Any
 
 class DataProcessor(ABC):
+    def __init__(self) -> None:
+        self._storage: list[str] = []
+        self._total_processed: int = 0
+
     @abstractmethod
     def validate(self, data: Any) -> bool:
-        a
+        ...
 
     @abstractmethod
     def ingest(self, data: Any) -> None:
-        a
+        ...
 
     def output(self) -> tuple[int, str]:
-        a
+        if not self._storage:
+            raise IndexError("No data avaliable in processor.")
 
+        rank: int = self._total_processed - len(self._storage)
+        value = self._storage.pop(0)
+        return (rank, value)
+
+    def remaining(self) -> int:
+        return len(self._storage)
+
+    def total_processed(self) -> int:
+        return self._total_processed
 
 class NumericProcessor(DataProcessor):
-    
+    def validate(self, data: Any) -> bool:
+        if isinstance(data, bool):
+            return False
+        if isinstance(data, (int, float)):
+            return True
+        if isinstance(data, list):
+            return all(
+                isinstance(item, (int, float)) and not isinstance(item, bool)
+                for item in data
+            )
+        return False
+
+    def ingest(self, data: int | float | list[int | float]) -> None:
+        if not self.validate(data):
+            raise TypeError("Improper numeric data")
+        
+        if isinstance(data, list):
+            for item in data:
+                self._storage.append(str(item))
+                self._total_processed += 1
+        else:
+            self._storage.append(str(data))
+            self._total_processed += 1
 
 class TextProcessor(DataProcessor):
+    def validate(self, data: Any) -> bool:
+        if isinstance(data, str):
+            return True
+        if isinstance(data, list):
+            return all(isinstance(item, str) for item in data)
+        return False
 
+    def ingest(self, data: str | list[str]) -> None:
+        if not self.validate(data):
+            raise TypeError("Improper text data")
+        
+        if isinstance(data, list):
+            for item in data:
+                self._storage.append(str(item))
+                self._total_processed += 1
+        else:
+            self._storage.append(str(data))
+            self._total_processed += 1
 
 class LogProcessor(DataProcessor):
+    def validate(self, data: Any) -> bool:
+        if isinstance(data, dict):
+            return all(
+                isinstance(k, str) and isinstance(v, str)
+                for k, v in data
+                )
+        if isinstance(data, list):
+            return all(
+                isinstance(item, dict) and
+                all(isinstance(k, str) and isinstance(v, str)
+                for k, v in item.items())
+                for item in data
+                )
+        return False
 
+    def ingest(self, data: dict[str, str] | list[dict[str, str]]) -> None:
+        if not self.validate(data):
+            raise TypeError("Improper log data")
+        
+        if isinstance(data, list):
+            for item in data:
+                log_level = item.get("log_level", "")
+                log_message = item.get("log_message", "")
+                self._storage.append(f"{log_level}: {log_message}")
+                self._total_processed += 1
+        else:
+            log_level = data.get("log_level", "")
+            log_message = data.get("log_message", "")
+            self._storage.append(f"{log_level}: {log_message}")
+            self._total_processed += 1
 
+if __name__ == "__main__":
+    print("=== Code Nexus - Data Processor ===")
 
-# This exercise requires the use of abstract classes using ABC (Abstract Base Class). We
-# will first create separate classes that share common interfaces. In the next exercise, they
-# will be unified in the same workflow.
-# Set up the following architecture:
-# • An abstract class DataProcessor that inherits from ABC and defines the common
-# processing interface.
-# • Three specialized classes NumericProcessor, TextProcessor, and LogProcessor
-# that inherit from the DataProcessor class and will process different kinds of data.
-# • Two abstract methods in DataProcessor: validate, which will check whether the
-# input data are appropriate for the current data processor, and ingest, which will
-# process the input data. Each specialized class will need to override these methods.
-# • One standard method in DataProcessor: output, which will output ingested data.
-# You need to comply with the following constraints:
-# • The validate method will be defined as validate(self, data: Any) -> bool
-# in the DataProcessor class. The overriding methods in the specialized classes will
-# share the same signature, as they cannot know what data will be sent and must
-# accept any type. This method returns a bool that indicates if the provided data
-# can be ingested by this data processor.
-# • The ingest method will be defined as ingest(self, data: Any) -> None in the
-# DataProcessor class. The overriding methods in the specialized classes will have
-# their own specific signatures to match the types they expect. In case the user
-# does not validate the data before calling ingest, and provides invalid data, an
-# exception must be raised.
-# • The output method will be defined as output(self) -> tuple[int, str] in the
-# DataProcessor class. There is no need to override it in the specialized classes.
-# • The NumericProcessor ingests int, float, and lists of both types (including
-# mixed-type lists). It then converts the data into strings and stores it internally,
-# waiting to be extracted using the output method. The overriding ingest method
-# signature must reflect the accepted types.
-# • The TextProcessor ingests str and lists of strings. It stores the data internally,
-# waiting to be extracted using the output method. The overriding ingest method
-# signature must reflect the accepted types.
-# • The LogProcessor ingests a dict of string key-value pairs, and lists of that type. It
-# then converts the data into strings and stores it internally, waiting to be extracted
-# using the output method. The overriding ingest method signature must reflect
-# the accepted types.
-# • The output method will extract the oldest piece of data stored internally in the
-# data processor, along with the associated processing rank within the data processor.
-# The piece of data is then removed from the data processor.
-# Finally, test your architecture:
-# • Create instances for each specialized class.
-# • Test valid and invalid data for each class through the validate method.
-# • Test at least one invalid data item with the ingest method without prior validation,
-# and check that it raises an exception. This will leave you with a mypy warning, on
-# purpose.
-# • Ingest various data for each data processor and then extract it using output.
+    # NumericProcessor
+    print("\nTesting Numeric Processor...")
+    num_proc = NumericProcessor()
+
+    print(f" Trying to validate input '42': {num_proc.validate(42)}")
+    print(f" Trying to validate input 'Hello': {num_proc.validate('Hello')}")
+
+    print(" Test invalid ingestion of string 'foo' without prior validation:")
+    try:
+        num_proc.ingest("foo")
+    except TypeError as e:
+        print(f" Got exception: {e}")
+
+    data_num: list[int | float] = [1, 2, 3, 4, 5]
+    print(f" Processing data: {data_num}")
+    num_proc.ingest(data_num)
+
+    print(" Extracting 3 values...")
+    for _ in range(3):
+        rank, value = num_proc.output()
+        print(f" Numeric value {rank}: {value}")
+
+    # TextProcessor
+    print("\nTesting Text Processor...")
+    txt_proc = TextProcessor()
+
+    print(f" Trying to validate input '42': {txt_proc.validate(42)}")
+
+    data_txt = ["Hello", "Nexus", "World"]
+    print(f" Processing data: {data_txt}")
+    txt_proc.ingest(data_txt)
+
+    print(" Extracting 1 value...")
+    rank, value = txt_proc.output()
+    print(f" Text value {rank}: {value}")
+
+    # LogProcessor
+    print("\nTesting Log Processor...")
+    log_proc = LogProcessor()
+
+    print(f" Trying to validate input 'Hello': {log_proc.validate('Hello')}")
+
+    data_log = [
+        {"log_level": "NOTICE", "log_message": "Connection to server"},
+        {"log_level": "ERROR", "log_message": "Unauthorized access!"},
+    ]
+    print(f" Processing data: {data_log}")
+    log_proc.ingest(data_log)
+
+    print(" Extracting 2 values...")
+    for _ in range(2):
+        rank, value = log_proc.output()
+        print(f" Log entry {rank}: {value}")
