@@ -111,59 +111,63 @@ class LogProcessor(DataProcessor):
 
 
 if __name__ == "__main__":
-    print("=== Code Nexus - Data Processor ===")
+    print("=== Data Processor ===")
 
     # NumericProcessor
-    print("\nTesting Numeric Processor...")
+    print("\n[NUMERIC] Initializing Numeric Processor subsystem...")
     num_proc = NumericProcessor()
 
-    print(f"Trying to validate input '42': {num_proc.validate(42)}")
-    print(f"Trying to validate input 'Hello!': {num_proc.validate('Hello!')}")
+    print(f"Validating numeric input '42': {num_proc.validate(42)}")
+    print("Validating invalid numeric input 'Hearthian': "
+          f"{num_proc.validate('Hearthian')}")
 
-    print("Test invalid ingestion of string 'trythis' "
-          "without prior validation:")
+    print("Attempting invalid ingestion of string 'QuantumMoon' "
+          "(expected failure):")
     try:
-        num_proc.ingest("trythis")
+        num_proc.ingest("QuantumMoon")
     except TypeError as e:
-        print(f"Ecxception: {e}")
+        print(f"Exception caught: {e}")
 
-    data_num: list[int | float] = [1, 2, 3, 4, 5]
-    print(f"Processing data: {data_num}")
+    data_num: list[int | float] = [318, 22.5, -7, 42, 3.14]
+    print(f"Ingesting numeric telemetry: {data_num}")
     num_proc.ingest(data_num)
 
-    print(" Extracting 3 values...")
+    print("Extracting 3 numeric values from buffer...")
     for _ in range(3):
         rank, value = num_proc.output()
-        print(f"Numeric value {rank}: {value}")
+        print(f"* Numeric entry {rank}: {value}")
 
     # TextProcessor
-    print("\nTesting Text Processor...")
+    print("\n[TEXT] Initializing Text Processor subsystem...")
     txt_proc = TextProcessor()
 
-    print(f"Trying to validate input '42': {txt_proc.validate(42)}")
+    print(f"Validating invalid text input '42': {txt_proc.validate(42)}")
 
-    data_txt = ["Hello", "Nexus", "World"]
-    print(f"Processing data: {data_txt}")
+    data_txt = ["The Eye is calling", "Timber Hearth", "End of the cycle"]
+    print(f"Ingesting text messages: {data_txt}")
     txt_proc.ingest(data_txt)
 
-    print("Extracting 1 value...")
+    print("Extracting 1 text value...")
     rank, value = txt_proc.output()
-    print(f"Text value {rank}: {value}")
+    print(f"* Text entry {rank}: {value}")
 
     # LogProcessor
-    print("\nTesting Log Processor...")
+    print("\n[LOG] Initializing Log Processor subsystem...")
     log_proc = LogProcessor()
 
-    print(f"Trying to validate input 'Hello': {log_proc.validate('Hello')}")
+    print("Validating invalid log input 'Hello': "
+          f"{log_proc.validate('Hello')}")
 
     data_log = [
-        {"log_level": "NOTICE", "log_message": "Connecting"},
-        {"log_level": "ERROR", "log_message": "Unauthorized!"},
+        {"log_level": "NOTICE", "log_message": "Probe tracking module online"},
+        {"log_level": "ERROR", "log_message": "Ghost Matter "
+         "detected in vicinity"},
     ]
-    print(f"Processing data: {data_log}")
+    print(f"Ingesting log entries: {data_log}")
     log_proc.ingest(data_log)
 
-    print("Extracting 2 values...")
+    print("Extracting 2 log values...")
     for _ in range(2):
         rank, value = log_proc.output()
-        print(f" Log entry {rank}: {value}")
+        print(f"* Log entry {rank}: {value}")
+    print("\n=== End of program ===")

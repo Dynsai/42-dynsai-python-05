@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Protocol
 
 
 class DataProcessor(ABC):
@@ -110,6 +110,27 @@ class LogProcessor(DataProcessor):
             self._total_processed += 1
 
 
+class ExportPlugin(Protocol):
+    def process_output(self, data: list[tuple[int, str]]) -> None:
+        ...
+
+
+class CSVExportPlugin:
+    def process_output(self, data: list[tuple[int, str]]) -> None:
+        values = [value for _, value in data]
+        csv_line = ",".join(values)
+        print("CSV Output:")
+        print(csv_line)
+
+
+class JSONExportPlugin:
+    def process_output(self, data: list[tuple[int, str]]) -> None:
+        pairs = [f'"item_{rank}": "{value}"' for rank, value in data]
+        json_str = "{" + ", ".join(pairs) + "}"
+        print("JSON Output:")
+        print(json_str)
+
+
 class DataStream:
     def __init__(self) -> None:
         self._processors: list[DataProcessor] = []
@@ -132,7 +153,7 @@ class DataStream:
                 )
 
     def print_processors_stats(self) -> None:
-        print("== DataStream statistics ==")
+        print("\n== DataStream statistics ==")
         if not self._processors:
             print("No processor found, no data")
             return
@@ -141,6 +162,81 @@ class DataStream:
             total = proc.total_processed()
             remaining = proc.remaining()
             print(
-                f"{name}: total {total} items processed, "
+                f"* {name}: total {total} items processed, "
                 f"remaining {remaining} on processor"
             )
+
+    def output_pipeline(self, nb: int, plugin: ExportPlugin) -> None:
+        """Consume nb elements from each processor and export via plugin."""
+        for proc in self._processors:
+            collected: list[tuple[int, str]] = []
+            for _ in range(nb):
+                if proc.remaining() == 0:
+                    break
+                collected.append(proc.output())
+            if collected:
+                plugin.process_output(collected)
+
+
+if __name__ == "__main__":
+    print("=== Outer Wilds - Data Pipeline ===")
+
+    stream = DataStream()
+
+    print("\nBooting Hearthian Data Stream...")
+    stream.print_processors_stats()
+
+    print("\nRegistering Onboard Processors")
+    num_proc = NumericProcessor()
+    txt_proc = TextProcessor()
+    log_proc = LogProcessor()
+    stream.register_processor(num_proc)
+    stream.register_processor(txt_proc)
+    stream.register_processor(log_proc)
+
+    batch1: list[Any] = [
+        "The Nomai wrote strange messages on the walls",
+        [3.14, -1, 42.0],
+        [
+            {"log_level": "WARNING",
+             "log_message": "Ghost Matter detected near Timber Hearth"},
+            {"log_level": "INFO",
+             "log_message": "Traveler Feldspar still missing in Dark Bramble"},
+        ],
+        318,
+        ["Signal identified", "Quantum fluctuations increasing"],
+    ]
+
+    print(f"\nTransmitting first batch of Hearthian data: {batch1}")
+    stream.process_stream(batch1)
+    stream.print_processors_stats()
+
+    csv_plugin = CSVExportPlugin()
+    print("\nExporting 3 processed entries from each processor to CSV module:")
+    stream.output_pipeline(3, csv_plugin)
+    stream.print_processors_stats()
+
+    batch2: list[Any] = [
+        22,
+        ["The Eye is calling", "The loop continues",
+         "Hold on to your memories"],
+        [
+            {"log_level": "ERROR",
+             "log_message": "Probe tracking module offline"},
+            {"log_level": "NOTICE",
+             "log_message": "Quantum Moon location unstable"},
+        ],
+        [12, 24, 36, 48, 60, 72],
+        "The universe is older than we thought",
+    ]
+
+    print(f"\nTransmitting second batch of Hearthian data: {batch2}")
+    stream.process_stream(batch2)
+    stream.print_processors_stats()
+
+    json_plugin = JSONExportPlugin()
+    print("\nExporting 5 processed entries "
+          "from each processor to JSON module:")
+    stream.output_pipeline(5, json_plugin)
+    stream.print_processors_stats()
+    print("\n=== End of program ===")

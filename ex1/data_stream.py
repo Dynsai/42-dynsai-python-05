@@ -127,12 +127,12 @@ class DataStream:
                     break
             if not handled:
                 print(
-                    f"DataStream error - Can't process element "
+                    f"DataStream ERROR - Can't process element "
                     f"in stream: {element}"
                 )
 
     def print_processors_stats(self) -> None:
-        print("== DataStream statistics ==")
+        print("\n== DataStream statistics ==")
         if not self._processors:
             print("No processor found, no data")
             return
@@ -141,52 +141,52 @@ class DataStream:
             total = proc.total_processed()
             remaining = proc.remaining()
             print(
-                f"{name}: total {total} items processed, "
+                f"* {name}: total {total} items processed, "
                 f"remaining {remaining} on processor"
             )
 
 
 if __name__ == "__main__":
-    print("=== Code Nexus - Data Stream ===")
+    print("=== Data Stream ===")
 
     stream = DataStream()
 
-    print("\nInitialize Data Stream...")
+    print("\nBooting Hearthian Data Stream...")
     stream.print_processors_stats()
 
-    print("\nRegistering Numeric Processor")
+    print("\nRegistering Numeric Telemetry Processor")
     num_proc = NumericProcessor()
     stream.register_processor(num_proc)
 
     batch1: list[Any] = [
-        "Hello world",
+        "The Nomai left strange messages across the solar system",
         [3.14, -1, 2.71],
         [
             {"log_level": "WARNING",
-             "log_message": "Telnet access! Use ssh instead"},
+             "log_message": "Ghost Matter detected near Timber Hearth"},
             {"log_level": "INFO",
-             "log_message": "User wil is connected"},
+             "log_message": "Traveler Feldspar remains unaccounted for"},
         ],
         42,
-        ["Hi", "five"],
+        ["Quantum fluctuations rising", "Signal identified"],
     ]
 
-    print(f"\nSend first batch of data on stream: {batch1}")
+    print(f"\nTransmitting first batch of Hearthian data: {batch1}")
     stream.process_stream(batch1)
     stream.print_processors_stats()
 
-    print("\nRegistering other data processors")
+    print("\nRegistering additional processors (Text, Log)")
     txt_proc = TextProcessor()
     log_proc = LogProcessor()
     stream.register_processor(txt_proc)
     stream.register_processor(log_proc)
 
-    print("Send the same batch again")
+    print("Re-transmitting initial batch for multi-processor ingestion...")
     stream.process_stream(batch1)
     stream.print_processors_stats()
 
     print(
-        "\nConsume some elements from the data processors: "
+        "\nConsuming buffered entries: "
         "Numeric 3, Text 2, Log 1"
     )
     for _ in range(3):
@@ -194,4 +194,6 @@ if __name__ == "__main__":
     for _ in range(2):
         txt_proc.output()
     log_proc.output()
+
     stream.print_processors_stats()
+    print("\n=== End of program ===")
